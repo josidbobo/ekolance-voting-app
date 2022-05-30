@@ -29,7 +29,7 @@ contract MyVotingApp is IVotingContract{
 
 
     constructor(){
-        require (msg.sender == chairperson, "Only Chairperson is allowed to deploy");
+        chairperson = msg.sender;
         deployedTime = block.timestamp;
     }
 
