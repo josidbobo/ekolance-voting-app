@@ -47,6 +47,7 @@ contract MyVotingApp is IVotingContract{
 
 function voteCandidate(uint candidateId) external override returns(bool){
     require (block.timestamp > deployedTime + 180, "Kindly wait, candidates are being added.");
+    require (block.timestamp < deployedTime + 360, "Voting has ended");
     require (voters[msg.sender].hasVoted == false, "You have already voted");
     candidates[candidateId].voteCount += 1;
     voters[msg.sender].hasVoted = true;
