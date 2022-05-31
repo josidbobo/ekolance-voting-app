@@ -1,23 +1,31 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.7.0 <0.9.0;
-
+pragma solidity >=0.8.7;
 
 //import "https://github.com/Ekolance/Voting-Smart-Contract-Interface/blob/main/IVotingContract.sol";
 import "./IVotingContract.sol";
 
 contract MyVotingApp is IVotingContract{
     struct Voter {
-        bool hasVoted;  // if true, that person already voted
+        bool hasVoted; 
     }
 
      struct Candidate {
-        // If you can limit the length to a certain number of bytes, 
-        // always use one of bytes1 to bytes32 because they are much cheaper
-        bytes32 name;   // short name (up to 32 bytes)
-        uint voteCount; // number of accumulated votes
-        //uint candidateId;
+        bytes32 name;   
+        uint voteCount; 
     }
+
+
+    event CandidateAdded (Candidate _candidate);
+    event ChairPersonChangedTo (address newChairPerson);
+
+    uint deployedTime;
+
+    address public chairperson;
+
+    mapping(address => Voter) public voters;
+
+    Candidate[] public candidates;
 
     modifier onlyChairperson(){
         require(msg.sender == chairperson, "Only Chairperson is allowed to add candidates");
@@ -46,13 +54,6 @@ contract MyVotingApp is IVotingContract{
         _;
     }
 
-    uint deployedTime;
-
-    address public chairperson;
-
-    mapping(address => Voter) public voters;
-
-    Candidate[] public candidates;
 
 
     constructor(){
@@ -62,12 +63,17 @@ contract MyVotingApp is IVotingContract{
 
     function changeChairperson(address _chairperson) public onlyChairperson returns(bool)  {
         chairperson = _chairperson;
+        emit ChairPersonChangedTo(_chairperson);
         return true;
     }
 
     function addCandidate(bytes32 candidate)  external override onlyChairperson noDuplicates(candidate) returns(bool) {
         require (block.timestamp < deployedTime + 180, "Window to add candidate has passed");
         candidates.push(Candidate({
+            name:candidate,
+            voteCount:0
+        }));
+        emit CandidateAdded(Candidate({
             name:candidate,
             voteCount:0
         }));
@@ -83,6 +89,7 @@ contract MyVotingApp is IVotingContract{
 
     //getWinner returns the name of the winner
     function getWinner() external override view returns(bytes32){
+        require(block.timestamp > deployedTime + 360, "Voting isnt over yet");
         uint initialHigh = 0;
         for(uint index = 0; index < candidates.length; index++){
             if (candidates[index].voteCount > candidates[initialHigh].voteCount){
@@ -101,3 +108,12 @@ contract MyVotingApp is IVotingContract{
         */
             }
         }
+
+        /*
+ [
+     Test  cases
+     "0x4d75626172617100000000000000000000000000000000000000000000000000",
+ "0x4f6f6b616e000000000000000000000000000000000000000000000000000000",
+ "0x4c6177616c000000000000000000000000000000000000000000000000000000"
+ ]
+*/
