@@ -1,22 +1,31 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.7.0 <0.9.0;
-
+pragma solidity >=0.8.7;
 
 //import "https://github.com/Ekolance/Voting-Smart-Contract-Interface/blob/main/IVotingContract.sol";
 import "./IVotingContract.sol";
 
 contract MyVotingApp is IVotingContract{
     struct Voter {
-        bool hasVoted;  // if true, that person already voted
+        bool hasVoted; 
     }
 
      struct Candidate {
-       
-        bytes32 name;   // short name (up to 32 bytes)
-        uint voteCount; // number of accumulated votes
-        
+        bytes32 name;   
+        uint voteCount; 
     }
+
+
+    event CandidateAdded (Candidate _candidate);
+    event ChairPersonChangedTo (address newChairPerson);
+
+    uint deployedTime;
+
+    address public chairperson;
+
+    mapping(address => Voter) public voters;
+
+    Candidate[] public candidates;
 
     modifier onlyChairperson(){
         require(msg.sender == chairperson, "Only Chairperson is allowed to add candidates");
@@ -45,16 +54,6 @@ contract MyVotingApp is IVotingContract{
         _;
     }
 
-    event CandidateAdded (Candidate _candidate);
-    event ChairPersonChangedTo (address newChairPerson);
-
-    uint deployedTime;
-
-    address public chairperson;
-
-    mapping(address => Voter) public voters;
-
-    Candidate[] public candidates;
 
 
     constructor(){
@@ -90,6 +89,7 @@ contract MyVotingApp is IVotingContract{
 
     //getWinner returns the name of the winner
     function getWinner() external override view returns(bytes32){
+        require(block.timestamp > deployedTime + 360, "Voting isnt over yet");
         uint initialHigh = 0;
         for(uint index = 0; index < candidates.length; index++){
             if (candidates[index].voteCount > candidates[initialHigh].voteCount){
